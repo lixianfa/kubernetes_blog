@@ -1,0 +1,25 @@
+一、源码攻略
+1、入口程序：plugin/cmd/kube-scheduler/scheduler.go main()
+
+创建NewSchedulerServer和启动调度服务；
+componentconfig.KubeSchedulerConfiguration{}定义了kube-scheduler的参数信息；
+
+2、启动程序：plugin/cmd/kube-scheduler/app/server.go Run()
+
+   1、创建apiserver客户端--通过REST方式访问APIserver提供的API服务，用来watch pod和node，并调用api 
+       server bind接口完成node和pod的Bind操作； 
+   2.创建eventBroadcaster对象--发送event到logging函数，发送event到eventSink，同时EventRecorder记录event 
+       source；
+   3、创建sharedInformerFactory对象，并创建PodInformer对象，PodInformer用于watch/list non-terminal pods并缓存；
+   4、创建schedulerConfigurator对象
+   （1）创建genericScheduler对象(接口Scheduler) ，genericScheduler对象的创建过程：
+
+   （2）创建schedulerConfigurator对象，它包含ConfigFactory对象(接口Configurator) plugin/cmd/kube-scheduler/app/configurator.go
+
+       调用schedulerConfigurator对象的create()方法创建Scheduler对象；genericScheduler对象是由ConfigFactory对象(Configurator是接口）的createFromProvider()方法创建的plugin/cmd/kube-scheduler/pkg/scheduler/factory/factory.go
+
+      （3）创建Scheduler需要如下Informer参数：nodeInformer、pvInformer、pvcInformer、rcInformer、rsInformer、statefulsetInformer、serviceInformer ；
+
+  5. 运行http Server--提供必要的性能分析(profiling)和性能指标度量(Metrics)，Handler包括/debug/pprof/和/metrics；
+
+     启动informerFactory.start() ，开始运行Informer，进行缓存；
